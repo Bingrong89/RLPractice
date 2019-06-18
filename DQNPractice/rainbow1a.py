@@ -24,12 +24,38 @@ import math
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 """
-based from dqn4, cantb e bothered with all the hyperparameter searching there for now.
+dqn1->2:
+    Fix some minor errors
+dqn2->3:
+    Added additional conditions as mentioned in paper
+    1. max no-op 30 turns
+    2. Clamp weight gradients
+    3. Switched epsilon schedule
+dqn3->4:
+    1. Convert image matrix to 3x84x84
+    2. Store image matrixes as float16 to allow much larger replay memory size
+dqn4->rainbow1a:
+    Implement distributional RL based on understanding from https://mtomassoli.github.io/2017/12/08/distributional_rl/
 
-STEP1. rainbow1.py
-Implement distributional RL
-after 2 days of staring @ https://mtomassoli.github.io/2017/12/08/distributional_rl/ , finally got a good idea what is happening
-the author has replied to my mail and clarified that atom position values are hyperparameters
+HYPERPARAMETERS LIST:
+It seems combining DL with RL really just makes this issue even more severe
+Asterisk for stuff that probably are better left untouched 
+    Deep Learning:
+        1. Learning Rate
+        2*. NN architecture(Just sticking to the one given in the DQN paper for now)
+        Note: DQN paper preprocessed input image into 4 channels, only using RGB here
+        Just need to bother with LR, as long as the conv and linear layer works, its fine for now
+    Reinforcement Learning:
+        ::: DQN :::
+        1. Replay Memory size
+        2. Initial replay memory fill count
+        3. Update interval(C)
+        4*. Epsilon schedule(OR the exploration method)
+        
+        ::: DISTRIBUTIONAL RL :::
+        1. Number of nodes
+        2. Atom distance value
+        3*. 0th atom starting value
 
 """
 
@@ -358,7 +384,7 @@ env = gym.make('AssaultDeterministic-v4')
 env2 = gym.make('AssaultDeterministic-v4')
 policynet = Modelz(env,100).to(device)
 targetnet = copy.deepcopy(policynet).to(device)
-replay_mem = Replay_Memory(400000)
+replay_mem = Replay_Memory(600000)
 criterion = nn.KLDivLoss(reduction='batchmean')
 #optimizer = optim.RMSprop(policynet.parameters(),lr=0.00025,momentum = 0.95,eps=0.01) #550 max
 #optimizer = optim.Adadelta(policynet.parameters(),lr=0.1,weight_decay=0.001) #645 max, stepcount 4950000
